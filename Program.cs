@@ -106,7 +106,7 @@ class Program
             x_prime = h_x_prime;
         }
 
-        throw new Exception("Collision not found");
+        throw new Exception("Не найдена");
     }
 
     static bool ByteArraysEqual(byte[] a, byte[] b)
@@ -128,26 +128,28 @@ class Program
         Bitmap image1 = new Bitmap("cat.jpg");
         Bitmap image2 = new Bitmap("dog.jpg");
         
-        var dict = new Dictionary<byte[], byte[]>();
+        var dict = new Dictionary<string, byte[]>();
         
-        for (int i = 0; i < (1 << n + 1); i++)
+        for (int i = 0;; i++) //i < (1 << 8 * n)
         {
             var bytes1 = GetBytesFromBitmap(image1);
-            var hash1 = strib.H(bytes1, n);
+            var hash1 = BitConverter.ToString(strib.H(bytes1, n)).ToLower();
             if (dict.TryGetValue(hash1, out var val1))
             {
                 File.WriteAllBytes($"{n}collision1.jpg", bytes1);
                 File.WriteAllBytes($"{n}collision2.jpg", val1);
+                Console.WriteLine(i);
                 break;
             }
             dict[hash1] = bytes1;
             
             var bytes2 = GetBytesFromBitmap(image2);
-            var hash2 = strib.H(bytes2, n);
-            if (dict.TryGetValue(hash1, out var val2))
+            var hash2 = BitConverter.ToString(strib.H(bytes2, n)).ToLower();
+            if (dict.TryGetValue(hash2, out var val2))
             {
-                File.WriteAllBytes($"{n}collision1.jpg", bytes1);
+                File.WriteAllBytes($"{n}collision1.jpg", bytes2);
                 File.WriteAllBytes($"{n}collision2.jpg", val2);
+                Console.WriteLine(i);
                 break;
             }
             dict[hash2] = bytes2;
@@ -167,7 +169,7 @@ class Program
             {
                 Color pixel = modified.GetPixel(x, y);
                 
-                int newBlue = (pixel.B & 0xFE) | ((pattern >> (x * modified.Height + y) % bitsToEncode) & 1);
+                int newBlue = (pixel.B & 0xFE) | ((pattern >> ((x * modified.Height + y) % bitsToEncode)) & 1);
                 Color newPixel = Color.FromArgb(pixel.R, pixel.G, newBlue);
                 
                 modified.SetPixel(x, y, newPixel);
@@ -185,11 +187,11 @@ class Program
     }
     static void Main(string[] args)
     {
-        //var (msg1, msg2) = FindCollisionBasic(3);
-        //Console.WriteLine($"Collision found:\nMessage 1: {msg1}\nMessage 2: {msg2}");
+        var (msg1, msg2) = FindCollisionBasic(3);
+        Console.WriteLine($"Найдена коллизия:\nM1: {msg1}\nM2: {msg2}");
 
-        //var (msg1, msg2) = FindCollisionIterative(2);
-        //Console.WriteLine($"Collision found:\nMessage 1: {BitConverter.ToString(msg1).ToLower()}\nMessage 2: {BitConverter.ToString(msg2).ToLower()}");
+        var (msg_1, msg_2) = FindCollisionIterative(2);
+        Console.WriteLine($"Найдена коллизия:\nM1: {BitConverter.ToString(msg_1).ToLower()}\nM2: {BitConverter.ToString(msg_2).ToLower()}");
 
         FindMeaningfulCollision(2);
     }
