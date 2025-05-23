@@ -1,5 +1,8 @@
 ﻿using ConsoleApp1.Stribog;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Numerics;
 using System.Text;
 
 //var strib = new Streebog();
@@ -120,6 +123,66 @@ class Program
         return true;
     }
 
+    static void FindMeaningfulCollision(int n)
+    {
+        Bitmap image1 = new Bitmap("cat.jpg");
+        Bitmap image2 = new Bitmap("dog.jpg");
+        
+        var dict = new Dictionary<byte[], byte[]>();
+        
+        for (int i = 0; i < (1 << n + 1); i++)
+        {
+            var bytes1 = GetBytesFromBitmap(image1);
+            var hash1 = strib.H(bytes1, n);
+            if (dict.TryGetValue(hash1, out var val1))
+            {
+                File.WriteAllBytes($"{n}collision1.jpg", bytes1);
+                File.WriteAllBytes($"{n}collision2.jpg", val1);
+                break;
+            }
+            dict[hash1] = bytes1;
+            
+            var bytes2 = GetBytesFromBitmap(image2);
+            var hash2 = strib.H(bytes2, n);
+            if (dict.TryGetValue(hash1, out var val2))
+            {
+                File.WriteAllBytes($"{n}collision1.jpg", bytes1);
+                File.WriteAllBytes($"{n}collision2.jpg", val2);
+                break;
+            }
+            dict[hash2] = bytes2;
+            
+            image1 = ModifyImage(image1, i, n);
+            image2 = ModifyImage(image2, i, n);
+        }
+    }
+    
+    static Bitmap ModifyImage(Bitmap original, int pattern, int bitsToEncode)
+    {
+        Bitmap modified = new Bitmap(original);
+        
+        for (int x = 0; x < modified.Width; x++)
+        {
+            for (int y = 0; y < modified.Height; y++)
+            {
+                Color pixel = modified.GetPixel(x, y);
+                
+                int newBlue = (pixel.B & 0xFE) | ((pattern >> (x * modified.Height + y) % bitsToEncode) & 1);
+                Color newPixel = Color.FromArgb(pixel.R, pixel.G, newBlue);
+                
+                modified.SetPixel(x, y, newPixel);
+            }
+        }
+        
+        return modified;
+    }
+    
+    static byte[] GetBytesFromBitmap(Bitmap bitmap)
+    {
+        using var stream = new MemoryStream();
+        bitmap.Save(stream, ImageFormat.Jpeg);
+        return stream.ToArray();
+    }
     static void Main(string[] args)
     {
         //var (msg1, msg2) = FindCollisionBasic(3);
@@ -127,5 +190,7 @@ class Program
 
         //var (msg1, msg2) = FindCollisionIterative(2);
         //Console.WriteLine($"Collision found:\nMessage 1: {BitConverter.ToString(msg1).ToLower()}\nMessage 2: {BitConverter.ToString(msg2).ToLower()}");
+
+        FindMeaningfulCollision(2);
     }
 }
